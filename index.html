@@ -8,24 +8,57 @@
 </head>
 <body>
 
-<header class="app-header">
+<!-- SETUP NEEDED (shown if supabase-config.js still has placeholder values) -->
+<div id="setupScreen" class="overlay-screen" style="display:none;">
+  <div class="overlay-card">
+    <h1>&#128293; Fuegos LA</h1>
+    <h2>Setup needed</h2>
+    <p>This app needs to be connected to a Supabase database before it can be used.
+       Open <code>js/supabase-config.js</code> and fill in your Supabase project's
+       URL and anon key, then run <code>supabase/schema.sql</code> in your
+       Supabase project's SQL Editor. See README.md for full steps.</p>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="overlay-screen" style="display:none;">
+  <div class="overlay-card">
+    <h1>&#128293; Fuegos LA</h1>
+    <h2 data-i18n="loginTitle">Staff Login</h2>
+    <form id="loginForm" class="login-form">
+      <label data-i18n="loginNameLabel">Name</label>
+      <select id="loginName" required></select>
+      <label data-i18n="loginPinLabel">PIN</label>
+      <input type="password" id="loginPin" inputmode="numeric" pattern="[0-9]*" required>
+      <button type="submit" class="btn btn-primary" data-i18n="loginBtn">Log In</button>
+      <div id="loginError" class="login-error" data-i18n="loginError" style="display:none;">Incorrect name or PIN.</div>
+    </form>
+  </div>
+</div>
+
+<header class="app-header" id="appHeader" style="display:none;">
   <div class="header-top">
     <div class="brand">
       <span class="brand-flame">&#128293;</span>
       <span class="brand-name">Fuegos LA</span>
       <span class="brand-sub" data-i18n="brandSub">Inventory Manager</span>
     </div>
-    <button id="langToggle" class="lang-toggle" type="button">ES</button>
+    <div class="header-actions">
+      <span class="current-staff" id="currentStaffLabel"></span>
+      <button id="logoutBtn" class="lang-toggle" type="button" data-i18n="logoutBtn">Log Out</button>
+      <button id="langToggle" class="lang-toggle" type="button">ES</button>
+    </div>
   </div>
   <nav class="tabs" id="tabs">
     <button class="tab-btn active" data-page="dashboard" data-i18n="navDashboard">Dashboard</button>
     <button class="tab-btn" data-page="stock" data-i18n="navStock">Fridge &amp; Freezer Stock</button>
     <button class="tab-btn" data-page="products" data-i18n="navProducts">Made Products</button>
     <button class="tab-btn" data-page="grocery" data-i18n="navGrocery">Grocery List</button>
+    <button class="tab-btn" data-page="history" data-i18n="navHistory">History</button>
   </nav>
 </header>
 
-<main id="app">
+<main id="app" style="display:none;">
 
   <!-- DASHBOARD -->
   <section class="page active" id="page-dashboard">
@@ -134,12 +167,23 @@
     </div>
   </section>
 
+  <!-- HISTORY -->
+  <section class="page" id="page-history">
+    <h1 data-i18n="historyTitle">History</h1>
+    <div class="toolbar">
+      <input type="text" id="historySearch" class="search-input" data-i18n-placeholder="searchPlaceholder" placeholder="Search...">
+    </div>
+    <div class="list" id="historyList"></div>
+  </section>
+
 </main>
 
-<footer class="app-footer">
-  <span data-i18n="footerNote">Data is saved on this device only.</span>
+<footer class="app-footer" id="appFooter" style="display:none;">
+  <span data-i18n="footerNote">Shared with your team — everyone sees the same live data.</span>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

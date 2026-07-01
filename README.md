@@ -1,10 +1,9 @@
 # Fuegos LA — Inventory Manager
 
-A simple, phone/tablet-friendly web app to help Fuegos LA track fridge & freezer
-stock and finished (made) products, in English and Spanish.
-
-No install, no server, no account needed — it's a static site that runs
-entirely in the browser and saves data on the device it's used on.
+A phone/tablet-friendly web app to help Fuegos LA track fridge & freezer
+stock and finished (made) products, in English and Spanish. Data is shared
+live across every device — everyone's phone/tablet sees the same inventory,
+and every change is attributed to the staff member who made it.
 
 ## Features
 
@@ -23,6 +22,11 @@ entirely in the browser and saves data on the device it's used on.
   suggested amount to buy), or add items manually. Check items off as
   they're ordered, then "Print / Share" to hand to a supplier, or clear
   the list when done.
+- **Staff login**: each person logs in with their name + a short PIN.
+  Everyone sees the same live data — an update on one phone shows up on
+  everyone else's screen automatically.
+- **History**: every add, delete, quantity change, and grocery-list action
+  is logged with who did it and when, viewable/searchable on the History tab.
 - **Search & filter** on the Stock and Products pages ("show low stock
   only") to quickly find things in a long list.
 - **Full English / Spanish switch** — the "ES" / "EN" button in the header
@@ -35,38 +39,61 @@ ham & cheese, caprese, vegan beef, humita corn, chimichurri, etc.) as a
 starting point — edit quantities, thresholds, and units to match reality,
 and add/remove anything.
 
-## How to use it
+## One-time setup (you need to do this before the app works)
 
-Just open `index.html` in a browser — on a phone, tablet, or computer.
+The app is a static site (`index.html`, `css/styles.css`, `js/app.js`), but
+it needs a free [Supabase](https://supabase.com) project as its shared
+database. This takes about 10 minutes and doesn't require a credit card.
 
-To host it online so staff can bookmark a link (recommended over emailing
-the file around):
+1. **Create a Supabase project**: sign up at supabase.com, click "New
+   Project," pick any name/region/password (you won't need that password
+   day-to-day).
+2. **Run the schema**: in your new project, go to the SQL Editor, paste in
+   the entire contents of `supabase/schema.sql` from this repo, and run it.
+   This creates all the tables, security rules, and starter ingredient/product
+   data.
+3. **Add staff logins**: still in the SQL Editor, run one line per person,
+   picking any name and a 4+ digit PIN:
+   ```sql
+   insert into staff (name, pin_hash) values ('Maria', encode(digest('1234', 'sha256'), 'hex'));
+   ```
+4. **Get your API keys**: go to Project Settings → API. Copy the "Project
+   URL" and the "anon public" key.
+5. **Fill in `js/supabase-config.js`**: open that file in this repo and
+   replace the two placeholder strings with the values from step 4.
+6. **Host it and share the link** (see below).
 
-- **GitHub Pages**: Settings → Pages → deploy from this branch/`main`, root
-  folder. Free and takes a couple of minutes.
-- Any static host works too (Netlify, Vercel, a plain file server) since
-  there's no backend — just `index.html`, `css/styles.css`, and `js/app.js`.
+## How to host it and share with coworkers
 
-## Important limitation: data is per-device
+Once `js/supabase-config.js` is filled in, this is a static site — any free
+static host works:
 
-This app stores data in the browser's local storage on whatever device
-opens it. That means:
+- **GitHub Pages** (simplest): repo Settings → Pages → deploy from this
+  branch/`main`, root folder. You'll get a URL like
+  `https://yourname.github.io/Fuegos-LA-App/` — send that link to your
+  coworkers and they can bookmark it on their phones. Everyone who opens it
+  logs in with their own name + PIN and sees the same live inventory.
+- Netlify, Vercel, or any static file host works the same way.
 
-- If it's opened on the kitchen tablet, updates made there won't show up
-  on someone's phone unless they're using the *same browser on the same
-  device*.
-- Clearing browser data/history will erase the inventory.
+## A note on security
 
-This is fine for a single shared kitchen tablet (the most common setup for
-this kind of tool), but **if multiple staff need to update stock from
-different phones/devices and see each other's changes in real time**, the
-app would need a small cloud database backend (e.g., Firebase or Supabase)
-instead of local storage. That's a natural next step if this MVP proves
-useful — let me know if you want it added.
+The staff PIN screen is meant for day-to-day accountability among a trusted
+team (so you know who changed what), not bank-level security. PINs are
+hashed in the database (never stored or sent as plain text), and the
+underlying `staff` table can never be read directly by the app — but the
+app's database key is, by design, visible in the browser (this is normal for
+this style of app, and access is controlled by the database rules in
+`supabase/schema.sql`, not by hiding the key). A technically determined
+person who obtained the link could theoretically query the database
+directly and skip the PIN screen. For tracking restaurant stock counts
+(not sensitive personal or payment data), that's a reasonable trade-off —
+just don't post the link somewhere fully public, and treat it like you
+would any internal team tool.
 
 ## Other ideas worth considering later
 
-- Login / staff accounts and a change log (who updated what, and when).
+- A "Manage Staff" page in the app itself, so you don't need to run SQL to
+  add/remove logins.
 - Low-stock email/text alerts instead of only in-app red highlighting.
 - Barcode scanning for faster stock counts.
 - Recipe-based auto-deduction: e.g. selling one beef empanada

@@ -1,10 +1,14 @@
 /* Fuegos LA Inventory Manager
-   Vanilla JS, no build step, persists to localStorage on this device. */
+   Shared, multi-device app backed by Supabase (see supabase/schema.sql).
+   Data is stored in the cloud so every phone/tablet sees the same live
+   inventory; staff log in with a name + PIN so changes can be attributed
+   in the History tab. */
 
 (function () {
   "use strict";
 
-  var STORAGE_KEY = "fuegosLA_inventory_v1";
+  var LANG_KEY = "fuegosLA_lang";
+  var STAFF_KEY = "fuegosLA_staff";
 
   /* ---------------------------------------------------------------- */
   /* Translations                                                      */
@@ -17,6 +21,7 @@
       navStock: "Fridge & Freezer Stock",
       navProducts: "Made Products",
       navGrocery: "Grocery List",
+      navHistory: "History",
       dashTitle: "Overview",
       sumIngredients: "Ingredients Tracked",
       sumLowIngredients: "Ingredients Low",
@@ -29,6 +34,7 @@
       stockTitle: "Fridge & Freezer Stock",
       productsTitle: "Made Products",
       groceryTitle: "Grocery List",
+      historyTitle: "History",
       searchPlaceholder: "Search...",
       showLowOnly: "Show low stock only",
       addIngredient: "Add Ingredient",
@@ -43,7 +49,7 @@
       printBtn: "Print / Share",
       clearCheckedBtn: "Clear checked",
       clearAllBtn: "Clear all",
-      footerNote: "Data is saved on this device only.",
+      footerNote: "Shared with your team — everyone sees the same live data.",
       low: "LOW",
       alertBelow: "Alert below",
       addToGrocery: "Add to grocery list",
@@ -53,13 +59,35 @@
       emptyStock: "No ingredients yet. Add one below.",
       emptyProducts: "No products yet. Add one below.",
       emptyGrocery: "Grocery list is empty.",
+      historyEmpty: "No activity yet.",
       locationFridge: "Fridge",
       locationFreezer: "Freezer",
       locationPantry: "Pantry",
       unitLbs: "lbs", unitKg: "kg", unitOz: "oz", unitG: "g",
       unitL: "L", unitMl: "mL", unitGal: "gal", unitQt: "qt",
       unitUnits: "units", unitDozen: "dozen", unitBunches: "bunches",
-      unitCans: "cans", unitBottles: "bottles"
+      unitCans: "cans", unitBottles: "bottles",
+      loginTitle: "Staff Login",
+      loginNameLabel: "Name",
+      loginPinLabel: "PIN",
+      loginBtn: "Log In",
+      loginError: "Incorrect name or PIN.",
+      logoutBtn: "Log Out",
+      act_added_ingredient: "added ingredient",
+      act_deleted_ingredient: "deleted ingredient",
+      act_updated_quantity: "changed quantity of",
+      act_updated_threshold: "changed alert threshold of",
+      act_added_product: "added product",
+      act_deleted_product: "deleted product",
+      act_updated_product_quantity: "changed quantity of",
+      act_updated_product_threshold: "changed alert threshold of",
+      act_added_grocery_item: "added to grocery list",
+      act_checked_grocery_item: "checked off",
+      act_unchecked_grocery_item: "unchecked",
+      act_deleted_grocery_item: "removed from grocery list",
+      act_generated_grocery_list: "generated grocery list from low stock",
+      act_cleared_grocery_checked: "cleared checked grocery items",
+      act_cleared_grocery_all: "cleared entire grocery list"
     },
     es: {
       brandSub: "Gestor de Inventario",
@@ -67,6 +95,7 @@
       navStock: "Refrigerador y Congelador",
       navProducts: "Productos Hechos",
       navGrocery: "Lista de Compras",
+      navHistory: "Historial",
       dashTitle: "Resumen General",
       sumIngredients: "Ingredientes Registrados",
       sumLowIngredients: "Ingredientes Bajos",
@@ -79,6 +108,7 @@
       stockTitle: "Refrigerador y Congelador",
       productsTitle: "Productos Hechos",
       groceryTitle: "Lista de Compras",
+      historyTitle: "Historial",
       searchPlaceholder: "Buscar...",
       showLowOnly: "Mostrar solo bajos",
       addIngredient: "Agregar Ingrediente",
@@ -93,7 +123,7 @@
       printBtn: "Imprimir / Compartir",
       clearCheckedBtn: "Quitar marcados",
       clearAllBtn: "Vaciar lista",
-      footerNote: "Los datos se guardan solo en este dispositivo.",
+      footerNote: "Compartido con tu equipo — todos ven los mismos datos en vivo.",
       low: "BAJO",
       alertBelow: "Alertar si es menor a",
       addToGrocery: "Agregar a la lista de compras",
@@ -103,13 +133,35 @@
       emptyStock: "Todavía no hay ingredientes. Agrega uno abajo.",
       emptyProducts: "Todavía no hay productos. Agrega uno abajo.",
       emptyGrocery: "La lista de compras está vacía.",
+      historyEmpty: "Todavía no hay actividad.",
       locationFridge: "Refrigerador",
       locationFreezer: "Congelador",
       locationPantry: "Despensa",
       unitLbs: "lbs", unitKg: "kg", unitOz: "oz", unitG: "g",
       unitL: "L", unitMl: "mL", unitGal: "gal", unitQt: "qt",
       unitUnits: "unidades", unitDozen: "docena", unitBunches: "manojos",
-      unitCans: "latas", unitBottles: "botellas"
+      unitCans: "latas", unitBottles: "botellas",
+      loginTitle: "Inicio de Sesión",
+      loginNameLabel: "Nombre",
+      loginPinLabel: "PIN",
+      loginBtn: "Iniciar Sesión",
+      loginError: "Nombre o PIN incorrecto.",
+      logoutBtn: "Cerrar Sesión",
+      act_added_ingredient: "agregó el ingrediente",
+      act_deleted_ingredient: "eliminó el ingrediente",
+      act_updated_quantity: "cambió la cantidad de",
+      act_updated_threshold: "cambió el umbral de alerta de",
+      act_added_product: "agregó el producto",
+      act_deleted_product: "eliminó el producto",
+      act_updated_product_quantity: "cambió la cantidad de",
+      act_updated_product_threshold: "cambió el umbral de alerta de",
+      act_added_grocery_item: "agregó a la lista de compras",
+      act_checked_grocery_item: "marcó como comprado",
+      act_unchecked_grocery_item: "desmarcó",
+      act_deleted_grocery_item: "quitó de la lista de compras",
+      act_generated_grocery_list: "generó la lista de compras a partir de lo que falta",
+      act_cleared_grocery_checked: "quitó los artículos marcados",
+      act_cleared_grocery_all: "vació toda la lista de compras"
     }
   };
 
@@ -136,80 +188,25 @@
   ];
 
   /* ---------------------------------------------------------------- */
-  /* Default seed data (based on Fuegos LA's Argentine empanada menu)  */
-  /* ---------------------------------------------------------------- */
-
-  function seedData() {
-    return {
-      language: "en",
-      ingredients: [
-        ing("Sirloin Beef", "Carne de Res (Bola de Lomo)", 20, "lbs", "freezer", 5),
-        ing("Shredded Chicken", "Pollo Desmenuzado", 15, "lbs", "freezer", 5),
-        ing("Spinach", "Espinaca", 10, "lbs", "fridge", 5),
-        ing("Mushroom", "Champiñones", 8, "lbs", "fridge", 5),
-        ing("Mozzarella Cheese", "Queso Mozzarella", 12, "lbs", "fridge", 5),
-        ing("Vegan Cheese", "Queso Vegano", 6, "lbs", "fridge", 5),
-        ing("Vegan Béchamel", "Bechamel Vegana", 4, "qt", "fridge", 5),
-        ing("Onion", "Cebolla", 25, "lbs", "pantry", 5),
-        ing("Red Bell Pepper", "Pimiento Rojo", 15, "lbs", "fridge", 5),
-        ing("Tomato", "Tomate", 10, "lbs", "fridge", 5),
-        ing("Basil", "Albahaca", 3, "bunches", "fridge", 5),
-        ing("Ham", "Jamón", 8, "lbs", "fridge", 5),
-        ing("Creamed Corn", "Maíz Cremoso", 6, "cans", "pantry", 5),
-        ing("Vegan Beef", "Carne Vegana", 5, "lbs", "freezer", 5),
-        ing("Malbec Wine", "Vino Malbec", 2, "bottles", "pantry", 5),
-        ing("Garlic", "Ajo", 4, "lbs", "pantry", 5),
-        ing("Parsley", "Perejil", 5, "bunches", "fridge", 5),
-        ing("Olive Oil", "Aceite de Oliva", 3, "gal", "pantry", 5),
-        ing("Empanada Dough Discs", "Discos de Masa para Empanadas", 200, "units", "freezer", 5),
-        ing("Oregano", "Orégano", 4, "lbs", "pantry", 5)
-      ],
-      products: [
-        prod("Hand Cut Beef Empanadas", "Empanadas de Carne Cortada a Mano", 24, 5),
-        prod("Chicken Empanadas", "Empanadas de Pollo", 18, 5),
-        prod("Spinach & Mushroom Empanadas", "Empanadas de Espinaca y Champiñones", 12, 5),
-        prod("Cheese & Onion Empanadas", "Empanadas de Queso y Cebolla", 10, 5),
-        prod("Ham & Cheese Empanadas", "Empanadas de Jamón y Queso", 8, 5),
-        prod("Caprese Empanadas", "Empanadas Caprese", 6, 5),
-        prod("Vegan Beef Empanadas", "Empanadas de Carne Vegana", 4, 5),
-        prod("Humita Corn Empanadas", "Empanadas de Humita", 3, 5),
-        prod("Chimichurri (8oz)", "Chimichurri (8oz)", 15, 5)
-      ],
-      groceryList: []
-    };
-  }
-
-  function uid() {
-    return "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
-  }
-
-  function ing(nameEn, nameEs, quantity, unit, location, threshold) {
-    return { id: uid(), nameEn: nameEn, nameEs: nameEs, quantity: quantity, unit: unit, location: location, threshold: threshold };
-  }
-
-  function prod(nameEn, nameEs, quantity, threshold) {
-    return { id: uid(), nameEn: nameEn, nameEs: nameEs, quantity: quantity, threshold: threshold };
-  }
-
-  /* ---------------------------------------------------------------- */
   /* State                                                              */
   /* ---------------------------------------------------------------- */
 
-  var state = loadState();
+  var supabaseClient = null;
+  var currentStaff = sessionStorage.getItem(STAFF_KEY) || null;
 
-  function loadState() {
-    try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        var parsed = JSON.parse(raw);
-        if (parsed && parsed.ingredients && parsed.products) return parsed;
-      }
-    } catch (e) { /* fall through to seed */ }
-    return seedData();
-  }
+  var state = {
+    language: localStorage.getItem(LANG_KEY) || "en",
+    ingredients: [],
+    products: [],
+    groceryList: [],
+    activityLog: []
+  };
 
-  function saveState() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  function isConfigured() {
+    var c = window.SUPABASE_CONFIG;
+    return !!(c && c.url && c.anonKey &&
+      c.url.indexOf("YOUR_SUPABASE_URL") === -1 &&
+      c.anonKey.indexOf("YOUR_SUPABASE_ANON_KEY") === -1);
   }
 
   function t(key) {
@@ -220,6 +217,56 @@
     if (state.language === "es" && item.nameEs) return item.nameEs;
     if (item.nameEn) return item.nameEn;
     return item.name || "";
+  }
+
+  function unitKey(unitValue) {
+    var found = UNITS.filter(function (u) { return u.value === unitValue; })[0];
+    return found ? found.key : "unitUnits";
+  }
+
+  function roundQty(n) {
+    return Math.round(n * 100) / 100;
+  }
+
+  function isLow(item) {
+    return Number(item.quantity) < Number(item.threshold);
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Supabase data access                                               */
+  /* ---------------------------------------------------------------- */
+
+  function mapIngredientRow(r) {
+    return { id: r.id, nameEn: r.name_en, nameEs: r.name_es, quantity: r.quantity, unit: r.unit, location: r.location, threshold: r.threshold };
+  }
+  function mapProductRow(r) {
+    return { id: r.id, nameEn: r.name_en, nameEs: r.name_es, quantity: r.quantity, threshold: r.threshold };
+  }
+  function mapGroceryRow(r) {
+    return { id: r.id, name: r.name, note: r.note, checked: r.checked, sourceId: r.source_id };
+  }
+
+  async function loadAllData() {
+    var results = await Promise.all([
+      supabaseClient.from("ingredients").select("*").order("name_en"),
+      supabaseClient.from("products").select("*").order("name_en"),
+      supabaseClient.from("grocery_list").select("*").order("created_at"),
+      supabaseClient.from("activity_log").select("*").order("created_at", { ascending: false }).limit(200)
+    ]);
+    state.ingredients = (results[0].data || []).map(mapIngredientRow);
+    state.products = (results[1].data || []).map(mapProductRow);
+    state.groceryList = (results[2].data || []).map(mapGroceryRow);
+    state.activityLog = results[3].data || [];
+    renderAll();
+  }
+
+  async function logActivity(action, entityName, detail) {
+    await supabaseClient.from("activity_log").insert({
+      staff_name: currentStaff,
+      action: action,
+      entity_name: entityName || "",
+      detail: detail || ""
+    });
   }
 
   /* ---------------------------------------------------------------- */
@@ -239,6 +286,8 @@
     document.getElementById("langToggle").textContent = state.language === "en" ? "ES" : "EN";
     populateSelect(document.getElementById("newIngUnit"), UNITS);
     populateSelect(document.getElementById("newIngLocation"), LOCATIONS);
+    var staffLabel = document.getElementById("currentStaffLabel");
+    if (staffLabel) staffLabel.textContent = currentStaff || "";
   }
 
   function populateSelect(select, options) {
@@ -258,10 +307,6 @@
   /* Dashboard                                                          */
   /* ---------------------------------------------------------------- */
 
-  function isLow(item) {
-    return Number(item.quantity) < Number(item.threshold);
-  }
-
   function renderDashboard() {
     var lowIngredients = state.ingredients.filter(isLow);
     var lowProducts = state.products.filter(isLow);
@@ -278,11 +323,6 @@
     renderDashList("dashLowProductsList", lowProducts, function (item) {
       return itemName(item) + " — " + item.quantity;
     });
-  }
-
-  function unitKey(unitValue) {
-    var found = UNITS.filter(function (u) { return u.value === unitValue; })[0];
-    return found ? found.key : "unitUnits";
   }
 
   function renderDashList(elId, items, formatter) {
@@ -354,15 +394,11 @@
     var qtyControls = document.createElement("div");
     qtyControls.className = "qty-controls";
 
-    var minusBtn = makeQtyBtn("−", function () {
-      updateIngredientQty(item.id, -1);
-    });
+    var minusBtn = makeQtyBtn("−", function () { updateIngredientQty(item, -1); });
     var qtyVal = document.createElement("span");
     qtyVal.className = "qty-value";
     qtyVal.textContent = item.quantity + " " + t(unitKey(item.unit));
-    var plusBtn = makeQtyBtn("+", function () {
-      updateIngredientQty(item.id, 1);
-    });
+    var plusBtn = makeQtyBtn("+", function () { updateIngredientQty(item, 1); });
 
     qtyControls.appendChild(minusBtn);
     qtyControls.appendChild(qtyVal);
@@ -379,9 +415,7 @@
     thresholdInput.min = "0";
     thresholdInput.value = item.threshold;
     thresholdInput.addEventListener("change", function () {
-      item.threshold = Number(thresholdInput.value) || 0;
-      saveState();
-      renderAll();
+      updateIngredientThreshold(item, Number(thresholdInput.value) || 0);
     });
     thresholdWrap.appendChild(thresholdText);
     thresholdWrap.appendChild(thresholdInput);
@@ -404,13 +438,7 @@
     deleteBtn.type = "button";
     deleteBtn.title = t("delete");
     deleteBtn.textContent = "🗑";
-    deleteBtn.addEventListener("click", function () {
-      if (confirm(t("confirmDelete"))) {
-        state.ingredients = state.ingredients.filter(function (i) { return i.id !== item.id; });
-        saveState();
-        renderAll();
-      }
-    });
+    deleteBtn.addEventListener("click", function () { deleteIngredient(item); });
     actions.appendChild(deleteBtn);
 
     row.appendChild(actions);
@@ -427,16 +455,32 @@
     return btn;
   }
 
-  function updateIngredientQty(id, delta) {
-    var item = state.ingredients.filter(function (i) { return i.id === id; })[0];
-    if (!item) return;
-    item.quantity = Math.max(0, roundQty(Number(item.quantity) + delta));
-    saveState();
-    renderAll();
+  async function updateIngredientQty(item, delta) {
+    var newQty = Math.max(0, roundQty(Number(item.quantity) + delta));
+    await supabaseClient.from("ingredients").update({ quantity: newQty }).eq("id", item.id);
+    await logActivity("updated_quantity", itemName(item), item.quantity + " → " + newQty + " " + t(unitKey(item.unit)));
+    await loadAllData();
   }
 
-  function roundQty(n) {
-    return Math.round(n * 100) / 100;
+  async function updateIngredientThreshold(item, newThreshold) {
+    await supabaseClient.from("ingredients").update({ threshold: newThreshold }).eq("id", item.id);
+    await logActivity("updated_threshold", itemName(item), item.threshold + " → " + newThreshold);
+    await loadAllData();
+  }
+
+  async function deleteIngredient(item) {
+    if (!confirm(t("confirmDelete"))) return;
+    await supabaseClient.from("ingredients").delete().eq("id", item.id);
+    await logActivity("deleted_ingredient", itemName(item));
+    await loadAllData();
+  }
+
+  async function addIngredient(name, qty, unit, location, threshold) {
+    await supabaseClient.from("ingredients").insert({
+      name_en: name, name_es: name, quantity: qty, unit: unit, location: location, threshold: threshold
+    });
+    await logActivity("added_ingredient", name, qty + " " + t(unitKey(unit)));
+    await loadAllData();
   }
 
   /* ---------------------------------------------------------------- */
@@ -486,15 +530,11 @@
 
     var qtyControls = document.createElement("div");
     qtyControls.className = "qty-controls";
-    var minusBtn = makeQtyBtn("−", function () {
-      updateProductQty(item.id, -1);
-    });
+    var minusBtn = makeQtyBtn("−", function () { updateProductQty(item, -1); });
     var qtyVal = document.createElement("span");
     qtyVal.className = "qty-value";
     qtyVal.textContent = item.quantity;
-    var plusBtn = makeQtyBtn("+", function () {
-      updateProductQty(item.id, 1);
-    });
+    var plusBtn = makeQtyBtn("+", function () { updateProductQty(item, 1); });
     qtyControls.appendChild(minusBtn);
     qtyControls.appendChild(qtyVal);
     qtyControls.appendChild(plusBtn);
@@ -514,7 +554,7 @@
     batchBtn.addEventListener("click", function () {
       var n = Number(batchInput.value);
       if (n > 0) {
-        updateProductQty(item.id, n);
+        updateProductQty(item, n);
         batchInput.value = "";
       }
     });
@@ -532,9 +572,7 @@
     thresholdInput.min = "0";
     thresholdInput.value = item.threshold;
     thresholdInput.addEventListener("change", function () {
-      item.threshold = Number(thresholdInput.value) || 0;
-      saveState();
-      renderAll();
+      updateProductThreshold(item, Number(thresholdInput.value) || 0);
     });
     thresholdWrap.appendChild(thresholdText);
     thresholdWrap.appendChild(thresholdInput);
@@ -545,54 +583,65 @@
     deleteBtn.type = "button";
     deleteBtn.title = t("delete");
     deleteBtn.textContent = "🗑";
-    deleteBtn.addEventListener("click", function () {
-      if (confirm(t("confirmDelete"))) {
-        state.products = state.products.filter(function (i) { return i.id !== item.id; });
-        saveState();
-        renderAll();
-      }
-    });
+    deleteBtn.addEventListener("click", function () { deleteProduct(item); });
     row.appendChild(deleteBtn);
 
     return row;
   }
 
-  function updateProductQty(id, delta) {
-    var item = state.products.filter(function (i) { return i.id === id; })[0];
-    if (!item) return;
-    item.quantity = Math.max(0, Math.round(Number(item.quantity) + delta));
-    saveState();
-    renderAll();
+  async function updateProductQty(item, delta) {
+    var newQty = Math.max(0, Math.round(Number(item.quantity) + delta));
+    await supabaseClient.from("products").update({ quantity: newQty }).eq("id", item.id);
+    await logActivity("updated_product_quantity", itemName(item), item.quantity + " → " + newQty);
+    await loadAllData();
+  }
+
+  async function updateProductThreshold(item, newThreshold) {
+    await supabaseClient.from("products").update({ threshold: newThreshold }).eq("id", item.id);
+    await logActivity("updated_product_threshold", itemName(item), item.threshold + " → " + newThreshold);
+    await loadAllData();
+  }
+
+  async function deleteProduct(item) {
+    if (!confirm(t("confirmDelete"))) return;
+    await supabaseClient.from("products").delete().eq("id", item.id);
+    await logActivity("deleted_product", itemName(item));
+    await loadAllData();
+  }
+
+  async function addProduct(name, qty, threshold) {
+    await supabaseClient.from("products").insert({ name_en: name, name_es: name, quantity: qty, threshold: threshold });
+    await logActivity("added_product", name, String(qty));
+    await loadAllData();
   }
 
   /* ---------------------------------------------------------------- */
   /* Grocery list page                                                  */
   /* ---------------------------------------------------------------- */
 
-  function addToGroceryList(name, note, sourceId) {
-    var exists = state.groceryList.some(function (g) {
-      return g.name === name && !g.checked;
-    });
+  async function addToGroceryList(name, note, sourceId) {
+    var exists = state.groceryList.some(function (g) { return g.name === name && !g.checked; });
     if (exists) return;
-    state.groceryList.push({ id: uid(), name: name, note: note || "", checked: false, sourceId: sourceId || null });
-    saveState();
-    renderAll();
+    await supabaseClient.from("grocery_list").insert({ name: name, note: note || "", checked: false, source_id: sourceId || null });
+    await logActivity("added_grocery_item", name, note || "");
+    await loadAllData();
   }
 
-  function generateGroceryListFromLowStock() {
+  async function generateGroceryListFromLowStock() {
     var lowIngredients = state.ingredients.filter(isLow);
-    lowIngredients.forEach(function (item) {
+    for (var i = 0; i < lowIngredients.length; i++) {
+      var item = lowIngredients[i];
       var needed = roundQty(Number(item.threshold) - Number(item.quantity));
       var note = needed > 0 ? ("+" + needed + " " + t(unitKey(item.unit))) : "";
       var already = state.groceryList.filter(function (g) { return g.sourceId === item.id && !g.checked; })[0];
       if (already) {
-        already.note = note;
+        await supabaseClient.from("grocery_list").update({ note: note }).eq("id", already.id);
       } else {
-        state.groceryList.push({ id: uid(), name: itemName(item), note: note, checked: false, sourceId: item.id });
+        await supabaseClient.from("grocery_list").insert({ name: itemName(item), note: note, checked: false, source_id: item.id });
       }
-    });
-    saveState();
-    renderAll();
+    }
+    await logActivity("generated_grocery_list", "", lowIngredients.length + " items");
+    await loadAllData();
   }
 
   function renderGrocery() {
@@ -612,9 +661,7 @@
       checkbox.type = "checkbox";
       checkbox.checked = g.checked;
       checkbox.addEventListener("change", function () {
-        g.checked = checkbox.checked;
-        saveState();
-        renderAll();
+        toggleGroceryChecked(g, checkbox.checked);
       });
       row.appendChild(checkbox);
 
@@ -635,12 +682,82 @@
       deleteBtn.type = "button";
       deleteBtn.title = t("delete");
       deleteBtn.textContent = "🗑";
-      deleteBtn.addEventListener("click", function () {
-        state.groceryList = state.groceryList.filter(function (i) { return i.id !== g.id; });
-        saveState();
-        renderAll();
-      });
+      deleteBtn.addEventListener("click", function () { deleteGroceryItem(g); });
       row.appendChild(deleteBtn);
+
+      container.appendChild(row);
+    });
+  }
+
+  async function toggleGroceryChecked(g, checked) {
+    await supabaseClient.from("grocery_list").update({ checked: checked }).eq("id", g.id);
+    await logActivity(checked ? "checked_grocery_item" : "unchecked_grocery_item", g.name);
+    await loadAllData();
+  }
+
+  async function deleteGroceryItem(g) {
+    await supabaseClient.from("grocery_list").delete().eq("id", g.id);
+    await logActivity("deleted_grocery_item", g.name);
+    await loadAllData();
+  }
+
+  async function clearCheckedGrocery() {
+    var ids = state.groceryList.filter(function (g) { return g.checked; }).map(function (g) { return g.id; });
+    if (ids.length === 0) return;
+    await supabaseClient.from("grocery_list").delete().in("id", ids);
+    await logActivity("cleared_grocery_checked", "", ids.length + " items");
+    await loadAllData();
+  }
+
+  async function clearAllGrocery() {
+    var ids = state.groceryList.map(function (g) { return g.id; });
+    if (ids.length === 0) return;
+    if (!confirm(t("confirmClearAll"))) return;
+    await supabaseClient.from("grocery_list").delete().in("id", ids);
+    await logActivity("cleared_grocery_all", "", ids.length + " items");
+    await loadAllData();
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* History page                                                       */
+  /* ---------------------------------------------------------------- */
+
+  function renderHistory() {
+    var search = (document.getElementById("historySearch").value || "").toLowerCase();
+    var container = document.getElementById("historyList");
+    container.innerHTML = "";
+
+    var items = state.activityLog.filter(function (entry) {
+      if (!search) return true;
+      var hay = (entry.staff_name + " " + entry.action + " " + entry.entity_name + " " + entry.detail).toLowerCase();
+      return hay.indexOf(search) !== -1;
+    });
+
+    if (items.length === 0) {
+      container.innerHTML = '<div class="empty-state">' + t("historyEmpty") + "</div>";
+      return;
+    }
+
+    items.forEach(function (entry) {
+      var row = document.createElement("div");
+      row.className = "item-row history-row";
+
+      var timeEl = document.createElement("div");
+      timeEl.className = "history-time";
+      timeEl.textContent = new Date(entry.created_at).toLocaleString();
+      row.appendChild(timeEl);
+
+      var textEl = document.createElement("div");
+      textEl.className = "history-text";
+      var staffSpan = document.createElement("span");
+      staffSpan.className = "history-staff";
+      staffSpan.textContent = entry.staff_name;
+      textEl.appendChild(staffSpan);
+      var rest = " " + t("act_" + entry.action);
+      if (entry.entity_name) rest += ' "' + entry.entity_name + '"';
+      if (entry.detail) rest += " (" + entry.detail + ")";
+      textEl.appendChild(document.createTextNode(rest));
+      row.appendChild(textEl);
 
       container.appendChild(row);
     });
@@ -656,6 +773,7 @@
     renderStock();
     renderProducts();
     renderGrocery();
+    renderHistory();
   }
 
   function switchPage(pageId) {
@@ -669,10 +787,45 @@
   }
 
   /* ---------------------------------------------------------------- */
+  /* Login / session                                                    */
+  /* ---------------------------------------------------------------- */
+
+  async function populateLoginNames() {
+    var select = document.getElementById("loginName");
+    select.innerHTML = "";
+    var res = await supabaseClient.rpc("list_staff_names");
+    var names = res.data || [];
+    names.forEach(function (row) {
+      var opt = document.createElement("option");
+      opt.value = row.name;
+      opt.textContent = row.name;
+      select.appendChild(opt);
+    });
+  }
+
+  function showApp() {
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("appHeader").style.display = "";
+    document.getElementById("app").style.display = "";
+    document.getElementById("appFooter").style.display = "";
+    loadAllData();
+    subscribeRealtime();
+  }
+
+  function subscribeRealtime() {
+    supabaseClient.channel("inventory-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "ingredients" }, loadAllData)
+      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, loadAllData)
+      .on("postgres_changes", { event: "*", schema: "public", table: "grocery_list" }, loadAllData)
+      .on("postgres_changes", { event: "*", schema: "public", table: "activity_log" }, loadAllData)
+      .subscribe();
+  }
+
+  /* ---------------------------------------------------------------- */
   /* Event wiring                                                       */
   /* ---------------------------------------------------------------- */
 
-  function init() {
+  function wireEvents() {
     document.getElementById("tabs").addEventListener("click", function (e) {
       var btn = e.target.closest(".tab-btn");
       if (btn) switchPage(btn.getAttribute("data-page"));
@@ -680,14 +833,20 @@
 
     document.getElementById("langToggle").addEventListener("click", function () {
       state.language = state.language === "en" ? "es" : "en";
-      saveState();
+      localStorage.setItem(LANG_KEY, state.language);
       renderAll();
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", function () {
+      sessionStorage.removeItem(STAFF_KEY);
+      location.reload();
     });
 
     document.getElementById("stockSearch").addEventListener("input", renderStock);
     document.getElementById("stockLowOnly").addEventListener("change", renderStock);
     document.getElementById("productSearch").addEventListener("input", renderProducts);
     document.getElementById("productLowOnly").addEventListener("change", renderProducts);
+    document.getElementById("historySearch").addEventListener("input", renderHistory);
 
     document.getElementById("addIngredientForm").addEventListener("submit", function (e) {
       e.preventDefault();
@@ -697,11 +856,9 @@
       var location = document.getElementById("newIngLocation").value;
       var threshold = Number(document.getElementById("newIngThreshold").value) || 5;
       if (!name) return;
-      state.ingredients.push({ id: uid(), nameEn: name, nameEs: name, quantity: qty, unit: unit, location: location, threshold: threshold });
-      saveState();
+      addIngredient(name, qty, unit, location, threshold);
       e.target.reset();
       document.getElementById("newIngThreshold").value = 5;
-      renderAll();
     });
 
     document.getElementById("addProductForm").addEventListener("submit", function (e) {
@@ -710,11 +867,9 @@
       var qty = Number(document.getElementById("newProdQty").value);
       var threshold = Number(document.getElementById("newProdThreshold").value) || 5;
       if (!name) return;
-      state.products.push({ id: uid(), nameEn: name, nameEs: name, quantity: qty, threshold: threshold });
-      saveState();
+      addProduct(name, qty, threshold);
       e.target.reset();
       document.getElementById("newProdThreshold").value = 5;
-      renderAll();
     });
 
     document.getElementById("addGroceryForm").addEventListener("submit", function (e) {
@@ -722,10 +877,8 @@
       var name = document.getElementById("newGroName").value.trim();
       var note = document.getElementById("newGroQty").value.trim();
       if (!name) return;
-      state.groceryList.push({ id: uid(), name: name, note: note, checked: false, sourceId: null });
-      saveState();
+      addToGroceryList(name, note, null);
       e.target.reset();
-      renderAll();
     });
 
     document.getElementById("generateGroceryBtn").addEventListener("click", generateGroceryListFromLowStock);
@@ -733,21 +886,46 @@
       switchPage("grocery");
       window.print();
     });
-    document.getElementById("clearCheckedBtn").addEventListener("click", function () {
-      state.groceryList = state.groceryList.filter(function (g) { return !g.checked; });
-      saveState();
-      renderAll();
-    });
-    document.getElementById("clearAllGroceryBtn").addEventListener("click", function () {
-      if (state.groceryList.length === 0) return;
-      if (confirm(t("confirmClearAll"))) {
-        state.groceryList = [];
-        saveState();
-        renderAll();
+    document.getElementById("clearCheckedBtn").addEventListener("click", clearCheckedGrocery);
+    document.getElementById("clearAllGroceryBtn").addEventListener("click", clearAllGrocery);
+
+    document.getElementById("loginForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      var name = document.getElementById("loginName").value;
+      var pin = document.getElementById("loginPin").value;
+      var res = await supabaseClient.rpc("verify_pin", { p_name: name, p_pin: pin });
+      if (res.data === true) {
+        currentStaff = name;
+        sessionStorage.setItem(STAFF_KEY, name);
+        document.getElementById("loginError").style.display = "none";
+        applyStaticTranslations();
+        showApp();
+      } else {
+        document.getElementById("loginError").style.display = "block";
       }
     });
+  }
 
-    renderAll();
+  /* ---------------------------------------------------------------- */
+  /* Init                                                               */
+  /* ---------------------------------------------------------------- */
+
+  async function init() {
+    if (!isConfigured()) {
+      document.getElementById("setupScreen").style.display = "flex";
+      return;
+    }
+
+    supabaseClient = window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey);
+    wireEvents();
+    applyStaticTranslations();
+
+    if (currentStaff) {
+      showApp();
+    } else {
+      document.getElementById("loginScreen").style.display = "flex";
+      await populateLoginNames();
+    }
   }
 
   document.addEventListener("DOMContentLoaded", init);
