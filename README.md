@@ -22,9 +22,9 @@ and every change is attributed to the staff member who made it.
   suggested amount to buy), or add items manually. Check items off as
   they're ordered, then "Print / Share" to hand to a supplier, or clear
   the list when done.
-- **Staff login**: each person logs in with their name + a short PIN.
-  Everyone sees the same live data — an update on one phone shows up on
-  everyone else's screen automatically.
+- **Staff login**: each person types their own name plus one shared team
+  access code. Everyone sees the same live data — an update on one phone
+  shows up on everyone else's screen automatically.
 - **History**: every add, delete, quantity change, and grocery-list action
   is logged with who did it and when, viewable/searchable on the History tab.
 - **Search & filter** on the Stock and Products pages ("show low stock
@@ -52,16 +52,13 @@ database. This takes about 10 minutes and doesn't require a credit card.
    the entire contents of `supabase/schema.sql` from this repo, and run it.
    This creates all the tables, security rules, and starter ingredient/product
    data.
-3. **Add staff logins**: still in the SQL Editor, run one line per person,
-   picking any name and a 4+ digit PIN:
-   ```sql
-   insert into staff (name, pin_hash) values ('Maria', encode(digest('1234', 'sha256'), 'hex'));
-   ```
-4. **Get your API keys**: go to Project Settings → API. Copy the "Project
+3. **Get your API keys**: go to Project Settings → API. Copy the "Project
    URL" and the "anon public" key.
-5. **Fill in `js/supabase-config.js`**: open that file in this repo and
-   replace the two placeholder strings with the values from step 4.
-6. **Host it and share the link** (see below).
+4. **Fill in `js/supabase-config.js`**: open that file in this repo and
+   replace the `url` and `anonKey` placeholder strings with the values from
+   step 3. While you're there, set `window.TEAM_ACCESS_CODE` to whatever
+   shared code your staff will use to log in (e.g. the date Fuegos LA opened).
+5. **Host it and share the link** (see below).
 
 ## How to host it and share with coworkers
 
@@ -72,28 +69,34 @@ static host works:
   branch/`main`, root folder. You'll get a URL like
   `https://yourname.github.io/Fuegos-LA-App/` — send that link to your
   coworkers and they can bookmark it on their phones. Everyone who opens it
-  logs in with their own name + PIN and sees the same live inventory.
+  types their own name plus the shared team access code and sees the same
+  live inventory.
 - Netlify, Vercel, or any static file host works the same way.
+
+**Important**: open `index.html` over `http(s)://` (via one of the hosts
+above, or a local dev server) rather than double-clicking the file to open
+it as a `file://` URL. Browsers and browser extensions (ad blockers, privacy
+tools) sometimes silently block API requests from `file://` pages, which
+can make the app look broken even though the code and database are fine.
 
 ## A note on security
 
-The staff PIN screen is meant for day-to-day accountability among a trusted
-team (so you know who changed what), not bank-level security. PINs are
-hashed in the database (never stored or sent as plain text), and the
-underlying `staff` table can never be read directly by the app — but the
-app's database key is, by design, visible in the browser (this is normal for
-this style of app, and access is controlled by the database rules in
+The team access code is meant for day-to-day accountability among a trusted
+team (so you know who changed what) and to keep casual/accidental edits out,
+not bank-level security — it's checked in the browser, not the database. The
+app's database key is, by design, visible in the browser too (this is normal
+for this style of app; access is controlled by the database rules in
 `supabase/schema.sql`, not by hiding the key). A technically determined
 person who obtained the link could theoretically query the database
-directly and skip the PIN screen. For tracking restaurant stock counts
-(not sensitive personal or payment data), that's a reasonable trade-off —
-just don't post the link somewhere fully public, and treat it like you
-would any internal team tool.
+directly and skip the login screen entirely. For tracking restaurant stock
+counts (not sensitive personal or payment data), that's a reasonable
+trade-off — just don't post the link somewhere fully public, and treat it
+like you would any internal team tool.
 
 ## Other ideas worth considering later
 
-- A "Manage Staff" page in the app itself, so you don't need to run SQL to
-  add/remove logins.
+- Individual staff PINs (rather than one shared code) if you want tighter
+  per-person accountability later on.
 - Low-stock email/text alerts instead of only in-app red highlighting.
 - Barcode scanning for faster stock counts.
 - Recipe-based auto-deduction: e.g. selling one beef empanada

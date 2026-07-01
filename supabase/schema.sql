@@ -23,7 +23,7 @@ create or replace function list_staff_names()
 returns table(name text)
 language sql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
   select name from staff order by name;
 $$;
@@ -33,18 +33,18 @@ create or replace function verify_pin(p_name text, p_pin text)
 returns boolean
 language sql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
   select exists (
     select 1 from staff
     where name = p_name
-    and pin_hash = encode(digest(p_pin, 'sha256'), 'hex')
+    and pin_hash = encode(extensions.digest(p_pin, 'sha256'), 'hex')
   );
 $$;
 grant execute on function verify_pin(text, text) to anon;
 
 -- To add a staff member who can log in, run (pick any name + 4+ digit PIN):
--- insert into staff (name, pin_hash) values ('Maria', encode(digest('1234', 'sha256'), 'hex'));
+-- insert into staff (name, pin_hash) values ('Maria', encode(extensions.digest('1234', 'sha256'), 'hex'));
 
 -- ---------------------------------------------------------------------
 -- Fridge & freezer stock
