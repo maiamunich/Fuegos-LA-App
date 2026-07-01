@@ -3,6 +3,6 @@
    The anon key is meant to be public/client-side; access is controlled by the
    Row Level Security policies in supabase/schema.sql, not by hiding this key. */
 window.SUPABASE_CONFIG = {
-  url: "YOUR_SUPABASE_URL",
-  anonKey: "YOUR_SUPABASE_ANON_KEY"
+  url: "https://vhusyuefqnmczmtksypr.supabase.co",
+  anonKey: "eyJhbGci••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"
 };
