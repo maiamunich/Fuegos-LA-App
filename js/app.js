@@ -68,10 +68,11 @@
       unitUnits: "units", unitDozen: "dozen", unitBunches: "bunches",
       unitCans: "cans", unitBottles: "bottles",
       loginTitle: "Staff Login",
-      loginNameLabel: "Name",
-      loginPinLabel: "PIN",
+      loginNameLabel: "Your Name",
+      loginNamePlaceholder: "Your name",
+      loginPinLabel: "Team Access Code",
       loginBtn: "Log In",
-      loginError: "Incorrect name or PIN.",
+      loginError: "Incorrect access code.",
       logoutBtn: "Log Out",
       act_added_ingredient: "added ingredient",
       act_deleted_ingredient: "deleted ingredient",
@@ -142,10 +143,11 @@
       unitUnits: "unidades", unitDozen: "docena", unitBunches: "manojos",
       unitCans: "latas", unitBottles: "botellas",
       loginTitle: "Inicio de Sesión",
-      loginNameLabel: "Nombre",
-      loginPinLabel: "PIN",
+      loginNameLabel: "Tu Nombre",
+      loginNamePlaceholder: "Tu nombre",
+      loginPinLabel: "Código de Acceso del Equipo",
       loginBtn: "Iniciar Sesión",
-      loginError: "Nombre o PIN incorrecto.",
+      loginError: "Código de acceso incorrecto.",
       logoutBtn: "Cerrar Sesión",
       act_added_ingredient: "agregó el ingrediente",
       act_deleted_ingredient: "eliminó el ingrediente",
@@ -790,19 +792,6 @@
   /* Login / session                                                    */
   /* ---------------------------------------------------------------- */
 
-  async function populateLoginNames() {
-    var select = document.getElementById("loginName");
-    select.innerHTML = "";
-    var res = await supabaseClient.rpc("list_staff_names");
-    var names = res.data || [];
-    names.forEach(function (row) {
-      var opt = document.createElement("option");
-      opt.value = row.name;
-      opt.textContent = row.name;
-      select.appendChild(opt);
-    });
-  }
-
   function showApp() {
     document.getElementById("loginScreen").style.display = "none";
     document.getElementById("appHeader").style.display = "";
@@ -889,12 +878,11 @@
     document.getElementById("clearCheckedBtn").addEventListener("click", clearCheckedGrocery);
     document.getElementById("clearAllGroceryBtn").addEventListener("click", clearAllGrocery);
 
-    document.getElementById("loginForm").addEventListener("submit", async function (e) {
+    document.getElementById("loginForm").addEventListener("submit", function (e) {
       e.preventDefault();
-      var name = document.getElementById("loginName").value;
-      var pin = document.getElementById("loginPin").value;
-      var res = await supabaseClient.rpc("verify_pin", { p_name: name, p_pin: pin });
-      if (res.data === true) {
+      var name = document.getElementById("loginName").value.trim();
+      var code = document.getElementById("loginPin").value;
+      if (name && code === window.TEAM_ACCESS_CODE) {
         currentStaff = name;
         sessionStorage.setItem(STAFF_KEY, name);
         document.getElementById("loginError").style.display = "none";
@@ -910,7 +898,7 @@
   /* Init                                                               */
   /* ---------------------------------------------------------------- */
 
-  async function init() {
+  function init() {
     if (!isConfigured()) {
       document.getElementById("setupScreen").style.display = "flex";
       return;
@@ -924,7 +912,6 @@
       showApp();
     } else {
       document.getElementById("loginScreen").style.display = "flex";
-      await populateLoginNames();
     }
   }
 
