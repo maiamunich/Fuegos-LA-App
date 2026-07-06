@@ -52,6 +52,7 @@
       footerNote: "Shared with your team — everyone sees the same live data.",
       low: "LOW",
       alertBelow: "Alert below",
+      clickToEdit: "Click to edit",
       addToGrocery: "Add to grocery list",
       delete: "Delete",
       confirmDelete: "Delete this item?",
@@ -67,6 +68,7 @@
       unitL: "L", unitMl: "mL", unitGal: "gal", unitQt: "qt",
       unitUnits: "units", unitDozen: "dozen", unitBunches: "bunches",
       unitCans: "cans", unitBottles: "bottles",
+      unitBags: "bags", unitSlices: "slices",
       loginTitle: "Staff Login",
       loginNameLabel: "Your Name",
       loginNamePlaceholder: "Your name",
@@ -127,6 +129,7 @@
       footerNote: "Compartido con tu equipo — todos ven los mismos datos en vivo.",
       low: "BAJO",
       alertBelow: "Alertar si es menor a",
+      clickToEdit: "Clic para editar",
       addToGrocery: "Agregar a la lista de compras",
       delete: "Eliminar",
       confirmDelete: "¿Eliminar este artículo?",
@@ -142,6 +145,7 @@
       unitL: "L", unitMl: "mL", unitGal: "gal", unitQt: "qt",
       unitUnits: "unidades", unitDozen: "docena", unitBunches: "manojos",
       unitCans: "latas", unitBottles: "botellas",
+      unitBags: "bolsas", unitSlices: "rebanadas",
       loginTitle: "Inicio de Sesión",
       loginNameLabel: "Tu Nombre",
       loginNamePlaceholder: "Tu nombre",
@@ -180,7 +184,9 @@
     { value: "dozen", key: "unitDozen" },
     { value: "bunches", key: "unitBunches" },
     { value: "cans", key: "unitCans" },
-    { value: "bottles", key: "unitBottles" }
+    { value: "bottles", key: "unitBottles" },
+    { value: "bags", key: "unitBags" },
+    { value: "slices", key: "unitSlices" }
   ];
 
   var LOCATIONS = [
@@ -397,9 +403,11 @@
     qtyControls.className = "qty-controls";
 
     var minusBtn = makeQtyBtn("−", function () { updateIngredientQty(item, -1); });
-    var qtyVal = document.createElement("span");
-    qtyVal.className = "qty-value";
-    qtyVal.textContent = item.quantity + " " + t(unitKey(item.unit));
+    var qtyVal = makeEditableQtyEl(
+      item.quantity,
+      function () { return item.quantity + " " + t(unitKey(item.unit)); },
+      function (newQty) { setIngredientQty(item, newQty); }
+    );
     var plusBtn = makeQtyBtn("+", function () { updateIngredientQty(item, 1); });
 
     qtyControls.appendChild(minusBtn);
@@ -455,6 +463,53 @@
     btn.textContent = label;
     btn.addEventListener("click", onClick);
     return btn;
+  }
+
+  function makeEditableQtyEl(currentValue, getDisplayText, onSave) {
+    var span = document.createElement("span");
+    span.className = "qty-value qty-editable";
+    span.textContent = getDisplayText();
+    span.title = t("clickToEdit");
+    span.addEventListener("click", function () {
+      var input = document.createElement("input");
+      input.type = "number";
+      input.className = "qty-edit-input";
+      input.min = "0";
+      input.step = "any";
+      input.value = currentValue;
+      var done = false;
+      var commit = function () {
+        if (done) return;
+        done = true;
+        var val = Number(input.value);
+        if (input.value !== "" && !isNaN(val)) {
+          onSave(Math.max(0, val));
+        } else {
+          renderAll();
+        }
+      };
+      input.addEventListener("blur", commit);
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          input.blur();
+        } else if (e.key === "Escape") {
+          done = true;
+          renderAll();
+        }
+      });
+      span.replaceWith(input);
+      input.focus();
+      input.select();
+    });
+    return span;
+  }
+
+  async function setIngredientQty(item, newQty) {
+    newQty = roundQty(newQty);
+    if (newQty === Number(item.quantity)) { renderAll(); return; }
+    await supabaseClient.from("ingredients").update({ quantity: newQty }).eq("id", item.id);
+    await logActivity("updated_quantity", itemName(item), item.quantity + " → " + newQty + " " + t(unitKey(item.unit)));
+    await loadAllData();
   }
 
   async function updateIngredientQty(item, delta) {
@@ -533,9 +588,11 @@
     var qtyControls = document.createElement("div");
     qtyControls.className = "qty-controls";
     var minusBtn = makeQtyBtn("−", function () { updateProductQty(item, -1); });
-    var qtyVal = document.createElement("span");
-    qtyVal.className = "qty-value";
-    qtyVal.textContent = item.quantity;
+    var qtyVal = makeEditableQtyEl(
+      item.quantity,
+      function () { return String(item.quantity); },
+      function (newQty) { setProductQty(item, newQty); }
+    );
     var plusBtn = makeQtyBtn("+", function () { updateProductQty(item, 1); });
     qtyControls.appendChild(minusBtn);
     qtyControls.appendChild(qtyVal);
@@ -593,6 +650,14 @@
 
   async function updateProductQty(item, delta) {
     var newQty = Math.max(0, Math.round(Number(item.quantity) + delta));
+    await supabaseClient.from("products").update({ quantity: newQty }).eq("id", item.id);
+    await logActivity("updated_product_quantity", itemName(item), item.quantity + " → " + newQty);
+    await loadAllData();
+  }
+
+  async function setProductQty(item, newQty) {
+    newQty = Math.round(newQty);
+    if (newQty === Number(item.quantity)) { renderAll(); return; }
     await supabaseClient.from("products").update({ quantity: newQty }).eq("id", item.id);
     await logActivity("updated_product_quantity", itemName(item), item.quantity + " → " + newQty);
     await loadAllData();
@@ -880,11 +945,10 @@
 
     document.getElementById("loginForm").addEventListener("submit", function (e) {
       e.preventDefault();
-      var name = document.getElementById("loginName").value.trim();
       var code = document.getElementById("loginPin").value;
-      if (name && code === window.TEAM_ACCESS_CODE) {
-        currentStaff = name;
-        sessionStorage.setItem(STAFF_KEY, name);
+      if (code === window.TEAM_ACCESS_CODE) {
+        currentStaff = "Staff";
+        sessionStorage.setItem(STAFF_KEY, currentStaff);
         document.getElementById("loginError").style.display = "none";
         applyStaticTranslations();
         showApp();

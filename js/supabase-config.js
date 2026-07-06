@@ -10,4 +10,4 @@ window.SUPABASE_CONFIG = {
 /* One shared code everyone on staff types in to log in (along with their own
    name, so the History tab still shows who did what). Change this to
    whatever you like -- it's checked in the browser, not in the database. */
-window.TEAM_ACCESS_CODE = "FuegosLA";
+window.TEAM_ACCESS_CODE = "CHANGE_ME";
