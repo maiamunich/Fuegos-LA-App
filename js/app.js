@@ -31,6 +31,11 @@
       dashReorderIngredients: "Ingredients to Reorder",
       dashRemakeProducts: "Products to Make More Of",
       dashAllGood: "All good — nothing low right now.",
+      forecastTitle: "Coming Up Soon",
+      forecastEmpty: "Not enough usage history yet to predict anything — keep using the app and predictions will appear here.",
+      forecastDaysLeft: "day(s) left at current pace",
+      forecastSuggestOrder: "Suggest ordering ~",
+      forecastSuggestMake: "Suggest making ~",
       stockTitle: "Fridge & Freezer Stock",
       productsTitle: "Made Products",
       groceryTitle: "Grocery List",
@@ -108,6 +113,11 @@
       dashReorderIngredients: "Ingredientes para Reordenar",
       dashRemakeProducts: "Productos para Volver a Hacer",
       dashAllGood: "Todo bien — nada bajo por ahora.",
+      forecastTitle: "Próximamente",
+      forecastEmpty: "Todavía no hay suficiente historial de uso para predecir nada — sigue usando la app y las predicciones aparecerán aquí.",
+      forecastDaysLeft: "día(s) restantes al ritmo actual",
+      forecastSuggestOrder: "Sugerencia: pedir ~",
+      forecastSuggestMake: "Sugerencia: hacer ~",
       stockTitle: "Refrigerador y Congelador",
       productsTitle: "Productos Hechos",
       groceryTitle: "Lista de Compras",
@@ -330,6 +340,85 @@
     });
     renderDashList("dashLowProductsList", lowProducts, function (item) {
       return itemName(item) + " — " + item.quantity;
+    });
+
+    renderForecasts();
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Usage forecasting: estimates reorder timing from history          */
+  /* ---------------------------------------------------------------- */
+
+  var FORECAST_HORIZON_DAYS = 7;
+
+  function parseChangeDetail(detail) {
+    var m = /^([\d.]+)\s*→\s*([\d.]+)/.exec(detail || "");
+    if (!m) return null;
+    return { oldQty: parseFloat(m[1]), newQty: parseFloat(m[2]) };
+  }
+
+  function computeUsageForecast(item, actionName, unitLabel, isProduct) {
+    if (isLow(item)) return null;
+    var name = itemName(item);
+    var decreases = [];
+    state.activityLog.forEach(function (entry) {
+      if (entry.action !== actionName || entry.entity_name !== name) return;
+      var parsed = parseChangeDetail(entry.detail);
+      if (!parsed || !(parsed.oldQty > parsed.newQty)) return;
+      decreases.push({ time: new Date(entry.created_at).getTime(), amount: parsed.oldQty - parsed.newQty });
+    });
+    if (decreases.length < 2) return null;
+    decreases.sort(function (a, b) { return a.time - b.time; });
+    var totalConsumed = decreases.reduce(function (sum, d) { return sum + d.amount; }, 0);
+    var spanDays = (decreases[decreases.length - 1].time - decreases[0].time) / 86400000;
+    if (spanDays < 0.5) return null;
+    var dailyRate = totalConsumed / spanDays;
+    if (dailyRate <= 0) return null;
+    var daysLeft = (Number(item.quantity) - Number(item.threshold)) / dailyRate;
+    if (!isFinite(daysLeft) || daysLeft < 0 || daysLeft > FORECAST_HORIZON_DAYS) return null;
+    return {
+      name: name,
+      daysLeft: daysLeft,
+      suggestedQty: Math.ceil(dailyRate * FORECAST_HORIZON_DAYS),
+      unitLabel: unitLabel || "",
+      isProduct: !!isProduct
+    };
+  }
+
+  function computeForecasts() {
+    var results = [];
+    state.ingredients.forEach(function (item) {
+      var f = computeUsageForecast(item, "updated_quantity", t(unitKey(item.unit)), false);
+      if (f) results.push(f);
+    });
+    state.products.forEach(function (item) {
+      var f = computeUsageForecast(item, "updated_product_quantity", "", true);
+      if (f) results.push(f);
+    });
+    results.sort(function (a, b) { return a.daysLeft - b.daysLeft; });
+    return results;
+  }
+
+  function renderForecasts() {
+    var el = document.getElementById("forecastList");
+    var forecasts = computeForecasts();
+    el.innerHTML = "";
+    if (forecasts.length === 0) {
+      var empty = document.createElement("li");
+      empty.className = "empty-msg";
+      empty.textContent = t("forecastEmpty");
+      el.appendChild(empty);
+      return;
+    }
+    forecasts.forEach(function (f) {
+      var li = document.createElement("li");
+      var days = Math.round(f.daysLeft * 10) / 10;
+      var text = f.name + " — ~" + days + " " + t("forecastDaysLeft") + ". ";
+      text += (f.isProduct ? t("forecastSuggestMake") : t("forecastSuggestOrder")) + f.suggestedQty;
+      if (f.unitLabel) text += " " + f.unitLabel;
+      text += ".";
+      li.textContent = text;
+      el.appendChild(li);
     });
   }
 

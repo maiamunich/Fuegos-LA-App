@@ -155,6 +155,19 @@ h3 { font-size: 0.95rem; margin: 0 0 10px; color: #555; }
   color: var(--ok-text);
 }
 
+.forecast-list li {
+  background: #f3eef1;
+  border-left-color: var(--brand-black);
+  color: var(--ink);
+  display: block;
+}
+.forecast-list .empty-msg {
+  background: #eef7ee;
+  border-left: 4px solid var(--ok-text);
+  color: var(--ok-text);
+  display: block;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;

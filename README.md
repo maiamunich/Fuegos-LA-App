@@ -10,23 +10,29 @@ and every change is attributed to the staff member who made it.
 - **Dashboard**: at-a-glance counts and lists of what's running low.
 - **Fridge & Freezer Stock**: track raw ingredients by quantity, unit
   (lbs, kg, oz, units, etc.) and location (fridge / freezer / pantry).
-  Add or delete ingredients freely. Each ingredient turns **red** and gets
+  Add or delete ingredients freely. Each ingredient turns **pink** and gets
   a "LOW" badge when its quantity drops below its alert threshold
   (defaults to 5, editable per item).
 - **Made Products**: track finished items (e.g. Chicken Empanadas,
   Chimichurri). Use **−1** every time one is sold/used, or add a batch
   count (**+N**) after a cooking run. Also turns red below the threshold
-  (default 5) so staff know it's time to make more.
+  (default 5) so staff know it's time to make more. Click any quantity
+  number directly to type an exact amount instead of tapping +/- repeatedly.
 - **Grocery List**: click "Generate list from low stock" to auto-build a
   shopping list from everything currently below its alert level (with the
   suggested amount to buy), or add items manually. Check items off as
   they're ordered, then "Print / Share" to hand to a supplier, or clear
   the list when done.
-- **Staff login**: each person types their own name plus one shared team
-  access code. Everyone sees the same live data — an update on one phone
-  shows up on everyone else's screen automatically.
+- **Staff login**: one shared team access code for everyone. Everyone sees
+  the same live data — an update on one phone shows up on everyone else's
+  screen automatically.
 - **History**: every add, delete, quantity change, and grocery-list action
-  is logged with who did it and when, viewable/searchable on the History tab.
+  is logged, viewable/searchable on the History tab.
+- **"Coming Up Soon" predictions**: using that same history, the Dashboard
+  estimates how fast each item is actually being used and flags anything
+  likely to hit its alert threshold within the next week — before it turns
+  pink — with a suggested amount to reorder or make. It needs a few logged
+  uses of an item before it has enough data to predict anything.
 - **Search & filter** on the Stock and Products pages ("show low stock
   only") to quickly find things in a long list.
 - **Full English / Spanish switch** — the "ES" / "EN" button in the header
