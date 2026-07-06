@@ -218,6 +218,17 @@ h3 { font-size: 0.95rem; margin: 0 0 10px; color: #555; }
 
 .item-meta { font-size: 0.78rem; color: #777; margin-top: 2px; }
 
+.location-select {
+  font-size: 0.78rem;
+  color: #777;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.location-select:hover { color: var(--brand-pink); }
+
 .storage-detail {
   cursor: pointer;
   border-bottom: 1px dashed var(--border);

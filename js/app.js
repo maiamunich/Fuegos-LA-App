@@ -88,6 +88,7 @@
       act_updated_quantity: "changed quantity of",
       act_updated_threshold: "changed alert threshold of",
       act_updated_storage_detail: "updated fridge/freezer location of",
+      act_updated_location: "moved",
       act_added_product: "added product",
       act_deleted_product: "deleted product",
       act_updated_product_quantity: "changed quantity of",
@@ -173,6 +174,7 @@
       act_updated_quantity: "cambió la cantidad de",
       act_updated_threshold: "cambió el umbral de alerta de",
       act_updated_storage_detail: "actualizó la ubicación de refrigerador/congelador de",
+      act_updated_location: "movió",
       act_added_product: "agregó el producto",
       act_deleted_product: "eliminó el producto",
       act_updated_product_quantity: "cambió la cantidad de",
@@ -485,7 +487,19 @@
     nameEl.textContent = itemName(item);
     var metaEl = document.createElement("div");
     metaEl.className = "item-meta";
-    metaEl.textContent = t(LOCATIONS.filter(function (l) { return l.value === item.location; })[0].key);
+    var locationSelect = document.createElement("select");
+    locationSelect.className = "location-select";
+    LOCATIONS.forEach(function (l) {
+      var opt = document.createElement("option");
+      opt.value = l.value;
+      opt.textContent = t(l.key);
+      locationSelect.appendChild(opt);
+    });
+    locationSelect.value = item.location;
+    locationSelect.addEventListener("change", function () {
+      updateIngredientLocation(item, locationSelect.value);
+    });
+    metaEl.appendChild(locationSelect);
     var storageEl = document.createElement("span");
     storageEl.className = "storage-detail";
     storageEl.title = t("clickToEdit");
@@ -653,6 +667,15 @@
     if (newDetail === (item.storageDetail || "")) { renderAll(); return; }
     await supabaseClient.from("ingredients").update({ storage_detail: newDetail }).eq("id", item.id);
     await logActivity("updated_storage_detail", itemName(item), newDetail || "—");
+    await loadAllData();
+  }
+
+  async function updateIngredientLocation(item, newLocation) {
+    if (newLocation === item.location) return;
+    var oldLabel = t(LOCATIONS.filter(function (l) { return l.value === item.location; })[0].key);
+    var newLabel = t(LOCATIONS.filter(function (l) { return l.value === newLocation; })[0].key);
+    await supabaseClient.from("ingredients").update({ location: newLocation }).eq("id", item.id);
+    await logActivity("updated_location", itemName(item), oldLabel + " → " + newLabel);
     await loadAllData();
   }
 
