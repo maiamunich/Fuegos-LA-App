@@ -218,6 +218,24 @@ h3 { font-size: 0.95rem; margin: 0 0 10px; color: #555; }
 
 .item-meta { font-size: 0.78rem; color: #777; margin-top: 2px; }
 
+.storage-detail {
+  cursor: pointer;
+  border-bottom: 1px dashed var(--border);
+}
+.storage-detail:hover {
+  color: var(--brand-pink);
+  border-bottom-color: var(--brand-pink);
+}
+
+.storage-detail-input {
+  width: 140px;
+  padding: 2px 4px;
+  font-size: 0.78rem;
+  border: 1px solid var(--brand-pink);
+  border-radius: 4px;
+  margin-top: 2px;
+}
+
 .qty-controls {
   display: flex;
   align-items: center;

@@ -9,7 +9,9 @@ and every change is attributed to the staff member who made it.
 
 - **Dashboard**: at-a-glance counts and lists of what's running low.
 - **Fridge & Freezer Stock**: track raw ingredients by quantity, unit
-  (lbs, kg, oz, units, etc.) and location (fridge / freezer / pantry).
+  (lbs, kg, oz, bags, slices, etc.) and location (fridge / freezer /
+  pantry), plus an optional specific spot (e.g. "Fridge 2, top shelf") —
+  click it on any item to set or change it, and it's searchable too.
   Add or delete ingredients freely. Each ingredient turns **pink** and gets
   a "LOW" badge when its quantity drops below its alert threshold
   (defaults to 5, editable per item).

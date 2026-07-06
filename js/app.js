@@ -58,6 +58,8 @@
       low: "LOW",
       alertBelow: "Alert below",
       clickToEdit: "Click to edit",
+      storageDetailPlaceholder: "Fridge/Freezer # (optional)",
+      addStorageDetail: "add fridge/freezer #",
       addToGrocery: "Add to grocery list",
       delete: "Delete",
       confirmDelete: "Delete this item?",
@@ -85,6 +87,7 @@
       act_deleted_ingredient: "deleted ingredient",
       act_updated_quantity: "changed quantity of",
       act_updated_threshold: "changed alert threshold of",
+      act_updated_storage_detail: "updated fridge/freezer location of",
       act_added_product: "added product",
       act_deleted_product: "deleted product",
       act_updated_product_quantity: "changed quantity of",
@@ -140,6 +143,8 @@
       low: "BAJO",
       alertBelow: "Alertar si es menor a",
       clickToEdit: "Clic para editar",
+      storageDetailPlaceholder: "Refrigerador/Congelador # (opcional)",
+      addStorageDetail: "agregar # de refrigerador/congelador",
       addToGrocery: "Agregar a la lista de compras",
       delete: "Eliminar",
       confirmDelete: "¿Eliminar este artículo?",
@@ -167,6 +172,7 @@
       act_deleted_ingredient: "eliminó el ingrediente",
       act_updated_quantity: "cambió la cantidad de",
       act_updated_threshold: "cambió el umbral de alerta de",
+      act_updated_storage_detail: "actualizó la ubicación de refrigerador/congelador de",
       act_added_product: "agregó el producto",
       act_deleted_product: "eliminó el producto",
       act_updated_product_quantity: "cambió la cantidad de",
@@ -255,7 +261,7 @@
   /* ---------------------------------------------------------------- */
 
   function mapIngredientRow(r) {
-    return { id: r.id, nameEn: r.name_en, nameEs: r.name_es, quantity: r.quantity, unit: r.unit, location: r.location, threshold: r.threshold };
+    return { id: r.id, nameEn: r.name_en, nameEs: r.name_es, quantity: r.quantity, unit: r.unit, location: r.location, storageDetail: r.storage_detail || "", threshold: r.threshold };
   }
   function mapProductRow(r) {
     return { id: r.id, nameEn: r.name_en, nameEs: r.name_es, quantity: r.quantity, threshold: r.threshold };
@@ -451,7 +457,10 @@
 
     var items = state.ingredients.filter(function (item) {
       if (lowOnly && !isLow(item)) return false;
-      if (search && itemName(item).toLowerCase().indexOf(search) === -1) return false;
+      if (search) {
+        var haystack = (itemName(item) + " " + (item.storageDetail || "")).toLowerCase();
+        if (haystack.indexOf(search) === -1) return false;
+      }
       return true;
     });
 
@@ -477,6 +486,32 @@
     var metaEl = document.createElement("div");
     metaEl.className = "item-meta";
     metaEl.textContent = t(LOCATIONS.filter(function (l) { return l.value === item.location; })[0].key);
+    var storageEl = document.createElement("span");
+    storageEl.className = "storage-detail";
+    storageEl.title = t("clickToEdit");
+    storageEl.textContent = item.storageDetail ? (" — " + item.storageDetail) : (" — " + t("addStorageDetail"));
+    storageEl.addEventListener("click", function () {
+      var input = document.createElement("input");
+      input.type = "text";
+      input.className = "storage-detail-input";
+      input.value = item.storageDetail || "";
+      input.placeholder = t("storageDetailPlaceholder");
+      var done = false;
+      var commit = function () {
+        if (done) return;
+        done = true;
+        updateIngredientStorageDetail(item, input.value.trim());
+      };
+      input.addEventListener("blur", commit);
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") input.blur();
+        else if (e.key === "Escape") { done = true; renderAll(); }
+      });
+      storageEl.replaceWith(input);
+      input.focus();
+      input.select();
+    });
+    metaEl.appendChild(storageEl);
     main.appendChild(nameEl);
     main.appendChild(metaEl);
     if (isLow(item)) {
@@ -614,6 +649,13 @@
     await loadAllData();
   }
 
+  async function updateIngredientStorageDetail(item, newDetail) {
+    if (newDetail === (item.storageDetail || "")) { renderAll(); return; }
+    await supabaseClient.from("ingredients").update({ storage_detail: newDetail }).eq("id", item.id);
+    await logActivity("updated_storage_detail", itemName(item), newDetail || "—");
+    await loadAllData();
+  }
+
   async function deleteIngredient(item) {
     if (!confirm(t("confirmDelete"))) return;
     await supabaseClient.from("ingredients").delete().eq("id", item.id);
@@ -621,9 +663,9 @@
     await loadAllData();
   }
 
-  async function addIngredient(name, qty, unit, location, threshold) {
+  async function addIngredient(name, qty, unit, location, storageDetail, threshold) {
     await supabaseClient.from("ingredients").insert({
-      name_en: name, name_es: name, quantity: qty, unit: unit, location: location, threshold: threshold
+      name_en: name, name_es: name, quantity: qty, unit: unit, location: location, storage_detail: storageDetail || "", threshold: threshold
     });
     await logActivity("added_ingredient", name, qty + " " + t(unitKey(unit)));
     await loadAllData();
@@ -997,9 +1039,10 @@
       var qty = Number(document.getElementById("newIngQty").value);
       var unit = document.getElementById("newIngUnit").value;
       var location = document.getElementById("newIngLocation").value;
+      var storageDetail = document.getElementById("newIngStorageDetail").value.trim();
       var threshold = Number(document.getElementById("newIngThreshold").value) || 5;
       if (!name) return;
-      addIngredient(name, qty, unit, location, threshold);
+      addIngredient(name, qty, unit, location, storageDetail, threshold);
       e.target.reset();
       document.getElementById("newIngThreshold").value = 5;
     });

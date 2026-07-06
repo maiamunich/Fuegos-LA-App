@@ -57,6 +57,7 @@ create table ingredients (
   quantity numeric not null default 0,
   unit text not null default 'units',
   location text not null default 'fridge',
+  storage_detail text not null default '',
   threshold numeric not null default 5
 );
 alter table ingredients enable row level security;
